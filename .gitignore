@@ -1,1 +1,9 @@
-**/.DS_Store
+# Ignore everything
+*
+# Don't ignore directories, so we can recurse into them
+!*/
+# Don't ignore .gitignore, *.txt, *.h and *.cpp files
+!.gitignore
+!*.txt
+!*.h
+!*.cpp

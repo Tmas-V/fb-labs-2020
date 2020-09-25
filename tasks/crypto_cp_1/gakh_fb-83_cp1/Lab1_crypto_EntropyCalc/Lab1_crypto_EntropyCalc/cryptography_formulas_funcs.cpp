@@ -1,6 +1,6 @@
 #include "cryptography_formulas_header.h"
 
-int calculate_ensemble_entropy(map<unsigned long int, float>* ensemble, float& entropy)
+int calculate_ensemble_entropy(map<unsigned long int, float>* ensemble,unsigned int& n, float& entropy)
 {
 	if (ensemble == NULL)
 	{
@@ -13,11 +13,10 @@ int calculate_ensemble_entropy(map<unsigned long int, float>* ensemble, float& e
 	{
 		if (iter->second > 0.0f)
 		{
-			//printf("Rate = %0.9f; ", iter->second);
 			entropy += -1 * iter->second * log2(iter->second);
-			//printf("'Entropy += %0.12f\n", entropy);
 		}
 	}
+	entropy = entropy / (float)n;
 	return 0;
 }
 int read_ensemble_from_file(char* data_file_name, map<unsigned long int, float>* ensemble)
@@ -37,7 +36,6 @@ int read_ensemble_from_file(char* data_file_name, map<unsigned long int, float>*
 
 	int tmp = 0;
 	tmp = fwscanf(data_file, L"%u %u %u %u",&lang, &n, &total_count, &blanks_count);
-	//printf("Read text params: tmp=%u, lang=%u, n=%u, N=%d, bl=%u\n", tmp, lang, n, total_count, blanks_count);
 	wchar_t* gramm = new wchar_t[n];
 	unsigned long int i = 1;
 	unsigned long int count = 0;
@@ -46,7 +44,6 @@ int read_ensemble_from_file(char* data_file_name, map<unsigned long int, float>*
 	{
 		if ((tmp = fwscanf(data_file, L"%s %u %f", gramm, &count, &rate)) > 0)
 		{
-			//wprintf(L"%s %u %0.9f\n", gramm, count, rate);
 			ensemble->insert(pair<unsigned long int, float>(i, rate));
 			i++;
 		}

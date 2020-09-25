@@ -40,9 +40,6 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 		lang_len = rus_len;
 		lang_mask = &rus_lang_mask;
 	}
-
-	//printf("%d, %d, %d, %d\n", index_lang_first, index_lang_last, lang_upper_index_offset, lang_len);
-
 	wchar_t wchar_in;
 	wchar_t wchar_out;
 	unsigned int index;
@@ -90,7 +87,6 @@ int get_text_length(char* f_plain_txt_name, unsigned long int& total_count, unsi
 		printf("Error opening plain text file(This file doesn`t exist).\n");
 		return 1;
 	}
-
 	wchar_t wchar_in;
 	unsigned long int total_char_count = 0;
 	blanks_count = 0;
@@ -106,151 +102,7 @@ int get_text_length(char* f_plain_txt_name, unsigned long int& total_count, unsi
 	fclose(f_plain_txt);
 	return 0;
 }
-int get_rate_of_gramm(wstring n_gramm, char* f_plain_txt_name,unsigned long int& n_gramm_count)
-{
-	if (n_gramm == L"")
-	{
-		printf("Error: NULL n-gramm .\n");
-		return 1;
-	}
-	FILE* f_plain_txt = fopen(f_plain_txt_name, "r");
-	if (f_plain_txt == NULL)
-	{
-		printf("Error opening plain text file(This file doesn`t exist).\n");
-		return 1;
-	}
 
-	wchar_t wchar_in;
-	unsigned long int ngramm_count = 0;
-	unsigned int n = n_gramm.size(), current_coinc = 0;
-	do {
-		wchar_in = fgetwc(f_plain_txt);
-		if (wchar_in == n_gramm[current_coinc])
-		{
-			current_coinc++;
-			if (current_coinc == n)
-			{
-				ngramm_count++;
-				if ((n > 1) && (wchar_in == n_gramm[0]))
-				{
-					current_coinc = 1;
-				}
-				else
-				{
-					current_coinc = 0;
-				}
-			}
-		}
-		else
-		{
-			current_coinc = 0;
-		}
-	} while (wchar_in != WEOF);
-	n_gramm_count = ngramm_count;
-	fclose(f_plain_txt);
-	return 0;
-}
-
-int generate_gramm_rate_file(char* plain_file_name,char* output_file_name, unsigned long int text_analysis_params[4])
-{
-	if ((text_analysis_params[0] != 0) && (text_analysis_params[0] != 1))
-	{
-		printf("Error: wrong language.\n");
-		return 1;
-	}
-	if (text_analysis_params[1] == 0)
-	{
-		printf("Error: wrong gramm length.\n");
-		return 1;
-	}
-	unsigned int index_first = 0, index_last = 0;
-	const map<unsigned int, wchar_t>* lang_encode = NULL;
-	const map<unsigned int, unsigned int>* lang_mask = NULL;
-	if (text_analysis_params[0] == 1)
-	{
-		index_first = index_rus_first, index_last = index_rus_last;
-		lang_encode = &rus_lang_encoding;
-		lang_mask = &rus_lang_mask;
-	}
-	else
-	{
-		index_first = index_eng_first, index_last = index_eng_last;
-		lang_encode = &eng_lang_encoding;
-		lang_mask = &eng_lang_mask;
-	}
-	unsigned long int  current_ngramm_count = 0;
-	float current_ngramm_rate = 0.0f;
-	FILE* gramm_output = fopen(output_file_name, "w");
-	fprintf(gramm_output, "%d %d %d %d\n", text_analysis_params[0], text_analysis_params[1], text_analysis_params[2], text_analysis_params[3]);
-	fclose(gramm_output);
-
-
-	unsigned int* stack = new unsigned int[text_analysis_params[1]];
-	unsigned long int top = text_analysis_params[1] - 1; bool isEnd = false;
-	for (unsigned long int i = 0; i < text_analysis_params[1]; i++)
-	{
-		stack[i] = index_first;
-	}
-	while (!isEnd)
-	{
-		if (stack[top] == lang_mask->at(stack[top]))
-		{
-			wstring gramm = L"";
-			for (unsigned long int i = 0; i<=top; i++)  gramm += { lang_encode->at(stack[i]) };
-			if (get_rate_of_gramm(gramm, plain_file_name, current_ngramm_count))
-			{
-				printf("Error calculating n-gramm rate.\n");
-				return 1;
-			}
-			current_ngramm_rate = (float)(current_ngramm_count) / (float)text_analysis_params[2];
-			FILE* gramm_output = fopen(output_file_name, "a");
-			fwprintf(gramm_output, L"%s %d %0.9f\n", gramm.c_str(), current_ngramm_count, current_ngramm_rate);
-			fclose(gramm_output);
-		}
-		if (stack[top] == index_last)
-		{
-			stack[top] = index_blank;
-			if (top != text_analysis_params[1] - 1)
-			{
-				top++;
-			}
-		}
-		else if (stack[top] == index_blank)
-		{
-			while ((stack[top] == index_blank) && (top > 0))
-			{
-				stack[top] = index_first;
-				top--;
-			}
-			if ((top == 0) && (stack[top] == index_blank))
-			{
-				isEnd = true;
-			}
-			else
-			{
-				if (stack[top] == index_last)
-				{
-					stack[top] = index_blank;
-				}
-				else
-				{
-					stack[top]++;
-				}
-				top = text_analysis_params[1] - 1;
-			}
-		}
-		else
-		{
-			stack[top]++;
-			if (top != text_analysis_params[1] - 1)
-			{
-				top++;
-			}
-		}
-	}
-	
-	return 0;
-}
 
 int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name, unsigned long int text_analysis_params[4])
 {
@@ -375,28 +227,22 @@ int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name, 
 	for (map<wstring, unsigned long int>::iterator i = hash_table.begin(); i != hash_table.end(); i++)
 	{
 		current_ngramm_count = i->second;
-		current_ngramm_rate = (float)(current_ngramm_count) / (float)text_analysis_params[2];
+		current_ngramm_rate = (float)(current_ngramm_count) / (float)(text_analysis_params[2] - text_analysis_params[1] + 1);
 		map_for_sort[i->first] = current_ngramm_rate;
 		fwprintf(gramm_output_new, L"%s %d %0.9f\n", i->first.c_str(), current_ngramm_count, current_ngramm_rate);
 	}
 	fclose(gramm_output_new);
 
-	const char* sort_f_name = "_-gramm_rate_data_SORTED__.txt";
-	char* f_name = new char[strlen(sort_f_name) + 1];
-	for (unsigned int i = 0; i < strlen(sort_f_name); i++)
-	{
-		f_name[i] = sort_f_name[i];
-	}
-	f_name[strlen(sort_f_name)] = '\0';
-	f_name[0] = (char)(text_analysis_params[1] + (int)'1' - 1);
+	char* f_name;
 	if (text_analysis_params[3] > 0)
 	{
-		f_name[25] = '1';
+		f_name = filename_copy("_-gramm_rate_data_SORTED_ANDblanks.txt",NULL,0);
 	}
 	else
 	{
-		f_name[25] = '0';
+		f_name = filename_copy("_-gramm_rate_data_SORTED_NOblanks.txt",NULL,0);
 	}
+	f_name[0] = (char)(text_analysis_params[1] + (int)'1' - 1);
 	output_ngramm_rate_sorted(text_analysis_params[0], text_analysis_params[1], &map_for_sort, f_name);
 	return 0;
 }
@@ -435,7 +281,7 @@ void quickSort(vector<map<wstring, float>::iterator>& iterators_array, unsigned 
 
 int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<wstring, float>* hash_table, char* output_f_name)
 {
-	if (lang != 1)
+	if (lang >= 2)
 	{
 		return 1;
 	}
@@ -457,54 +303,66 @@ int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<w
 	}
 	else
 	{
+		const map<unsigned int, wchar_t>* lang_encoding;
+		const map<unsigned int, unsigned int>* lang_mask;
+		if (lang == 0)
+		{
+			lang_encoding = &eng_lang_encoding;
+			lang_mask = &eng_lang_mask;
+		}
+		else
+		{
+			lang_encoding = &rus_lang_encoding;
+			lang_mask = &rus_lang_mask;
+		}
 		FILE* output_file = fopen(output_f_name, "w");
 		fwprintf(output_file, L"     ");
 		for (unsigned int i = index_rus_first; i <= index_rus_last; i++)
 		{
-			if (i != rus_lang_mask.at(i)) continue;
-			fwprintf(output_file, L"|      %c       ", rus_lang_encoding.at(i));
+			if (i != lang_mask->at(i)) continue;
+			fwprintf(output_file, L"|      %c       ", lang_encoding->at(i));
 		}
-		fwprintf(output_file, L"|      '%c'      |\n", rus_lang_encoding.at(index_blank));
+		fwprintf(output_file, L"|      '%c'      |\n", lang_encoding->at(index_blank));
 		//                                                                                         columns
 		for (unsigned int i = index_rus_first; i <= index_rus_last; i++)
 		{
-			if (i != rus_lang_mask.at(i)) continue;
+			if (i != lang_mask->at(i)) continue;
 			fwprintf(output_file, L"----");
 			for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
 			{
-				if (j != rus_lang_mask.at(j)) continue;
+				if (j != lang_mask->at(j)) continue;
 				fwprintf(output_file, L"--------------");
 			}
 			fwprintf(output_file, L"-------------\n");
 			
-			fwprintf(output_file, L"%c   ", rus_lang_encoding.at(i));
+			fwprintf(output_file, L"%c   ", lang_encoding->at(i));
 			for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
 			{
-				if (j != rus_lang_mask.at(j)) continue;
+				if (j != lang_mask->at(j)) continue;
 				wstring gramm = L"";
-				gramm += { rus_lang_encoding.at(i) };
-				gramm += { rus_lang_encoding.at(j) };
+				gramm += { lang_encoding->at(i) };
+				gramm += { lang_encoding->at(j) };
 				fwprintf(output_file, L" | %0.9f ", hash_table->at(gramm));
 			}
 			wstring gramm = L"";
-			gramm += { rus_lang_encoding.at(i) };
-			gramm += { rus_lang_encoding.at(index_blank) };
+			gramm += { lang_encoding->at(i) };
+			gramm += { lang_encoding->at(index_blank) };
 			fwprintf(output_file, L"| %0.9f |\n", hash_table->at(gramm));
 		}
 		//                                                                                 low-border + floats
 		for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
 		{
-			if (j != rus_lang_mask.at(j)) continue;
+			if (j != lang_mask->at(j)) continue;
 			fwprintf(output_file, L"---------------");
 		}
 		fwprintf(output_file, L"-------------\n");
 		fwprintf(output_file, L"' '");
 		for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
 		{
-			if (j != rus_lang_mask.at(j)) continue;
+			if (j != lang_mask->at(j)) continue;
 			wstring gramm = L"";
-			gramm += { rus_lang_encoding.at(index_blank) };
-			gramm += { rus_lang_encoding.at(j) };
+			gramm += { lang_encoding->at(index_blank) };
+			gramm += { lang_encoding->at(j) };
 			fwprintf(output_file, L" | %0.9f ", hash_table->at(gramm));
 		}
 		fwprintf(output_file, L"| %0.9f |\n", hash_table->at(L"  "));
@@ -512,7 +370,7 @@ int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<w
 		fwprintf(output_file, L"----");
 		for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
 		{
-			if (j != rus_lang_mask.at(j)) continue;
+			if (j != lang_mask->at(j)) continue;
 			fwprintf(output_file, L"---------------");
 		}
 		fwprintf(output_file, L"-------------");
@@ -520,4 +378,42 @@ int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<w
 		fclose(output_file);
 	}
 	return 0;
+}
+
+char* filename_copy(const char* fname, const char** dir_array, unsigned int dir_len)
+{
+	if ((dir_array == NULL) || (dir_len == 0))
+	{
+		char* final_fname = new char[strlen(fname) + 1];
+		for (unsigned int i = 0; i < strlen(fname); i++)
+		{
+			final_fname[i] = fname[i];
+		}
+		final_fname[strlen(fname)] = '\0';
+		return final_fname;
+	}
+	unsigned long int final_name = 0;
+	for (unsigned int i = 0; i < dir_len; i++)
+	{
+		final_name += strlen(dir_array[i]) + 1;
+	}
+
+	char* final_fname = new char[final_name+strlen(fname)+1];
+	unsigned long int index = 0;
+	for (unsigned int i = 0; i < dir_len; i++)
+	{
+		for (unsigned int j = 0; j < strlen(dir_array[i]); j++)
+		{
+			final_fname[index+j] = dir_array[i][j];
+		}
+		index += strlen(dir_array[i]);
+		final_fname[index] = '\\';
+		index++;
+	}
+	for (unsigned int i = 0; i < strlen(fname); i++)
+	{
+		final_fname[index + i] = fname[i];
+	}
+	final_fname[final_name] = '\0';
+	return final_fname;
 }

@@ -19,6 +19,11 @@
 
 #define fname_buff_size 256
 #define word_len 50
+#define data_rate_dir_name "data_rate"
+#define data_rate_SORTED_dir_name "data_rate_SORTED"
+#define raw_texts_dir_name "raw_texts"
+#define plain_texts_dir_name "plain_texts"
+#define entropy_out_dir_name "entropy_out"
 using namespace std;
 
 const map<unsigned int, wchar_t> rus_lang_encoding = {
@@ -160,13 +165,120 @@ const map<unsigned int, unsigned int> rus_lang_mask = {
 	{1103, 1103}
 };
 
-const map<unsigned int, wchar_t> eng_lang_encoding = {};
-const map<unsigned int, unsigned int> eng_lang_mask = {};
+const map<unsigned int, wchar_t> eng_lang_encoding = {
+	{65, L'A'},
+	{66, L'B'},
+	{67, L'C'},
+	{68, L'D'},
+	{69, L'E'},
+	{70, L'F'},
+	{71, L'G'},
+	{72, L'H'},
+	{73, L'I'},
+	{74, L'J'},
+	{75, L'K'},
+	{76, L'L'},
+	{77, L'M'},
+	{78, L'N'},
+	{79, L'O'},
+	{80, L'P'},
+	{81, L'Q'},
+	{82, L'R'},
+	{83, L'S'},
+	{84, L'T'},
+	{85, L'U'},
+	{86, L'V'},
+	{87, L'W'},
+	{88, L'X'},
+	{89, L'Y'},
+	{90, L'Z'},
+	{32, L' '},
+	{97, L'a'},
+	{98, L'b'},
+	{99, L'c'},
+	{100, L'd'},
+	{101, L'e'},
+	{102, L'f'},
+	{103, L'g'},
+	{104, L'h'},
+	{105, L'i'},
+	{106, L'j'},
+	{107, L'k'},
+	{108, L'l'},
+	{109, L'm'},
+	{110, L'n'},
+	{111, L'o'},
+	{112, L'p'},
+	{113, L'q'},
+	{114, L'r'},
+	{115, L's'},
+	{116, L't'},
+	{117, L'u'},
+	{118, L'v'},
+	{119, L'w'},
+	{120, L'x'},
+	{121, L'y'},
+	{122, L'z'}
+};
+const map<unsigned int, unsigned int> eng_lang_mask = {
+	{65, 65},
+	{66, 66},
+	{67, 67},
+	{68, 68},
+	{69, 69},
+	{70, 70},
+	{71, 71},
+	{72, 72},
+	{73, 73},
+	{74, 74},
+	{75, 75},
+	{76, 76},
+	{77, 77},
+	{78, 78},
+	{79, 79},
+	{80, 80},
+	{81, 81},
+	{82, 82},
+	{83, 83},
+	{84, 84},
+	{85, 85},
+	{86, 86},
+	{87, 87},
+	{88, 88},
+	{89, 89},
+	{90, 90},
+	{32, 32},
+	{97, 97},
+	{98, 98},
+	{99, 99},
+	{100, 100},
+	{101, 101},
+	{102, 102},
+	{103, 103},
+	{104, 104},
+	{105, 105},
+	{106, 106},
+	{107, 107},
+	{108, 108},
+	{109, 109},
+	{110, 110},
+	{111, 111},
+	{112, 112},
+	{113, 113},
+	{114, 114},
+	{115, 115},
+	{116, 116},
+	{117, 117},
+	{118, 118},
+	{119, 119},
+	{120, 120},
+	{121, 121},
+	{122, 122}
+};
 
+char* filename_copy(const char* fname, const char** dir_array, unsigned int dir_len);
 int filter_text(char* f_raw_name, char* f_plain_name, int lang,bool ignoreBlanks);
 int get_text_length(char* f_plain_txt_name, unsigned long int& total_count, unsigned long int& blanks_count);
-int get_rate_of_gramm(wstring n_gramm, char* f_plain_txt_name, unsigned long int& n_gramm_count);
-int generate_gramm_rate_file(char* plain_file_name, char* output_file_name, unsigned long int text_analysis_params[4]);
 int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name, unsigned long int text_analysis_params[4]);
 
 int sort_map_by_rate(map<wstring, float>* hash_table, vector<map<wstring, float>::iterator>& sorted_arr);

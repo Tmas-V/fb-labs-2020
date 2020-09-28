@@ -7,7 +7,8 @@
 !*.txt
 !*.h
 !*.cpp
-!.pdf
+!*.pdf
+!*.png
 !.\tasks\crypto_cp_1\TEXT
 !.\tasks\crypto_cp_1\TEXT_backup
 !.\tasks\crypto_cp_1\CoolPinkProgram.exe

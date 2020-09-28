@@ -19,6 +19,7 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 
 	unsigned int index_lang_first, index_lang_last, lang_upper_index_offset, lang_len;
 	const map<unsigned int, unsigned int>* lang_mask = NULL;
+	const map<unsigned int, wchar_t>* lang_encode = NULL;
 	if ((lang != 0) && (lang != 1))
 	{
 		printf("Error: wrong .language\n");
@@ -31,6 +32,7 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 		lang_upper_index_offset = eng_upper_index_offset;
 		lang_len = eng_len;
 		lang_mask = &eng_lang_mask;
+		lang_encode = &eng_lang_encoding;
 	}
 	else
 	{
@@ -39,6 +41,7 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 		lang_upper_index_offset = rus_upper_index_offset;
 		lang_len = rus_len;
 		lang_mask = &rus_lang_mask;
+		lang_encode = &rus_lang_encoding;
 	}
 	wchar_t wchar_in;
 	wchar_t wchar_out;
@@ -53,7 +56,7 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 			{
 				if (!isPrevBlank)
 				{
-					fwprintf(f_plain_txt, L"%c", (wchar_t)index_blank);
+					fwprintf(f_plain_txt, L"%c", lang_encode->at(index_blank));
 				}
 				isPrevBlank = true;
 			}
@@ -64,11 +67,11 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 			wchar_out = wchar_in;
 			if ((index_lang_first <= index) && (index <= index_lang_last))
 			{
-				wchar_out = wchar_in;
+				wchar_out = lang_encode->at(index);
 			}
 			else if ((index_lang_first - lang_upper_index_offset <= index) && (index <= index_lang_last - lang_upper_index_offset))
 			{
-				wchar_out = (wchar_t)((index + lang_upper_index_offset));
+				wchar_out = lang_encode->at(index + lang_upper_index_offset);
 			}
 			fwprintf(f_plain_txt, L"%c", wchar_out);
 			isPrevBlank = false;
@@ -79,32 +82,9 @@ int filter_text(char* f_raw_name, char* f_plain_name, int lang, bool ignoreBlank
 	fclose(f_raw_txt);
 	return 0;
 }
-int get_text_length(char* f_plain_txt_name, unsigned long int& total_count, unsigned long int& blanks_count)
-{
-	FILE* f_plain_txt = fopen(f_plain_txt_name, "r");
-	if (f_plain_txt == NULL)
-	{
-		printf("Error opening plain text file(This file doesn`t exist).\n");
-		return 1;
-	}
-	wchar_t wchar_in;
-	unsigned long int total_char_count = 0;
-	blanks_count = 0;
-	do {
-		wchar_in = fgetwc(f_plain_txt);
-		if ((unsigned int)wchar_in == index_blank)
-		{
-			blanks_count++;
-		}
-		total_char_count++;
-	} while (wchar_in != WEOF);
-	total_count = total_char_count;
-	fclose(f_plain_txt);
-	return 0;
-}
 
 
-int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name, unsigned long int text_analysis_params[4])
+int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name_overlap, char* output_file_name_nooverlap,bool ignoreBlanks, unsigned long int text_analysis_params[5], map<wstring, float>* ensemble_overlap, map<wstring, float>* ensemble_nooverlap)
 {
 	if ((text_analysis_params[0] != 0) && (text_analysis_params[0] != 1))
 	{
@@ -131,119 +111,214 @@ int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name, 
 		lang_encode = &eng_lang_encoding;
 		lang_mask = &eng_lang_mask;
 	}
-	
-	FILE* gramm_output = fopen(output_file_name, "w");
-	fprintf(gramm_output, "%d %d %d %d\n", text_analysis_params[0], text_analysis_params[1], text_analysis_params[2], text_analysis_params[3]);
-	fclose(gramm_output);
 
 
 	unsigned int* stack = new unsigned int[text_analysis_params[1]];
 	unsigned long int top = text_analysis_params[1] - 1; bool isEnd = false;
-	map<wstring, unsigned long int> hash_table;
-	deque<wchar_t> current_gramm;
+	map<wstring, unsigned long int> hash_table_overlap;
+	map<wstring, unsigned long int> hash_table_nooverlap;
 	for (unsigned long int i = 0; i < text_analysis_params[1]; i++)
 	{
 		stack[i] = index_first;
 	}
-	while (!isEnd)
+	if (ignoreBlanks)
 	{
-		if (stack[top] == lang_mask->at(stack[top]))
+		while (!isEnd)
 		{
-			wstring gramm = L"";
-			for (unsigned long int i = 0; i <= top; i++)  gramm += { lang_encode->at(stack[i]) };
-			hash_table[gramm] = 0;			
-		}
-		if (stack[top] == index_last)
-		{
-			stack[top] = index_blank;
-			if (top != text_analysis_params[1] - 1)
+			if (stack[top] == lang_mask->at(stack[top]))
 			{
-				top++;
+				wstring gramm = L"";
+				for (unsigned long int i = 0; i <= top; i++)  gramm += { lang_encode->at(stack[i]) };
+				hash_table_nooverlap[gramm] = 0;
+				hash_table_overlap[gramm] = 0;
 			}
-		}
-		else if (stack[top] == index_blank)
-		{
-			while ((stack[top] == index_blank) && (top > 0))
+			if (stack[top] == index_last)
 			{
-				stack[top] = index_first;
-				top--;
-			}
-			if ((top == 0) && (stack[top] == index_blank))
-			{
-				isEnd = true;
-			}
-			else
-			{
-				if (stack[top] == index_last)
+				while ((stack[top] == index_last) && (top > 0))
 				{
-					stack[top] = index_blank;
+					stack[top] = index_first;
+					top--;
+				}
+				if ((top == 0) && (stack[top] == index_last))
+				{
+					isEnd = true;
 				}
 				else
 				{
 					stack[top]++;
+					if (stack[top] != lang_mask->at(stack[top])) stack[top]++;
+					top = text_analysis_params[1] - 1;
 				}
-				top = text_analysis_params[1] - 1;
+			}
+			else
+			{
+				stack[top]++;
+				if (stack[top] != lang_mask->at(stack[top])) stack[top]++;
+				if (top != text_analysis_params[1] - 1)
+				{
+					top++;
+				}
 			}
 		}
-		else
+	}
+	else
+	{
+		while (!isEnd)
 		{
-			stack[top]++;
-			if (top != text_analysis_params[1] - 1)
+			if (stack[top] == lang_mask->at(stack[top]))
 			{
-				top++;
+				wstring gramm = L"";
+				for (unsigned long int i = 0; i <= top; i++)  gramm += { lang_encode->at(stack[i]) };
+				hash_table_nooverlap[gramm] = 0;
+				hash_table_overlap[gramm] = 0;
+			}
+			if (stack[top] == index_last)
+			{
+				stack[top] = index_blank;
+				if (top != text_analysis_params[1] - 1)
+				{
+					top++;
+				}
+			}
+			else if (stack[top] == index_blank)
+			{
+				while ((stack[top] == index_blank) && (top > 0))
+				{
+					stack[top] = index_first;
+					top--;
+				}
+				if ((top == 0) && (stack[top] == index_blank))
+				{
+					isEnd = true;
+				}
+				else
+				{
+					if (stack[top] == index_last)
+					{
+						stack[top] = index_blank;
+					}
+					else
+					{
+						stack[top]++;
+						if (stack[top] != lang_mask->at(stack[top])) stack[top]++;
+					}
+					top = text_analysis_params[1] - 1;
+				}
+			}
+			else
+			{
+				stack[top]++;
+				if (stack[top] != lang_mask->at(stack[top])) stack[top]++;
+				if (top != text_analysis_params[1] - 1)
+				{
+					top++;
+				}
 			}
 		}
 	}
 	FILE* plain_file = fopen(plain_file_name, "r");
 	wchar_t wchar_in;
+	deque<wchar_t> current_gramm_overlap;
+	deque<wchar_t>  current_gramm_nooverlap;
+	unsigned int l = text_analysis_params[1];
+	unsigned long int total_chars_nooverlap = 0, total_chars_overlap = 0, blanks_count = 0;
 	for (unsigned int i = 0; i < text_analysis_params[1]; i++)
 	{
 		wchar_in = fgetwc(plain_file);
-		current_gramm.push_back(wchar_in);
+		if (wchar_in == L' ') blanks_count++;
+		current_gramm_overlap.push_back(wchar_in);
+		current_gramm_nooverlap.push_back(wchar_in);
 	}
 	do {
 		wchar_in = fgetwc(plain_file);
+		if (wchar_in == L' ') blanks_count++;
 		if (wchar_in != WEOF)
 		{
 			wstring gramm = L"";
-			for (deque<wchar_t>::iterator i = current_gramm.begin(); i != current_gramm.end(); i++)  gramm += { lang_encode->at(*i) };
-			if (hash_table.count(gramm) > 0)
+			for (deque<wchar_t>::iterator i = current_gramm_overlap.begin(); i != current_gramm_overlap.end(); i++)  gramm += { lang_encode->at(lang_mask->at(*i)) };
+			hash_table_overlap[gramm]++;
+			total_chars_overlap++;
+
+			current_gramm_overlap.pop_front();
+			current_gramm_overlap.push_back(wchar_in);
+
+			if (l == text_analysis_params[1])
 			{
-				hash_table[gramm]++;
+				wstring gramm = L"";
+				for (deque<wchar_t>::iterator i = current_gramm_nooverlap.begin(); i != current_gramm_nooverlap.end(); i++)  gramm += { lang_encode->at(lang_mask->at(*i)) };
+				hash_table_nooverlap[gramm]++;
+				total_chars_nooverlap++;
+				for (unsigned int i = 0; i < text_analysis_params[1]; i++)
+				{
+					current_gramm_nooverlap.pop_back();
+				}
+				current_gramm_nooverlap.push_back(wchar_in);
+				l = 1;
 			}
-			if ((lang_mask->count((unsigned int)wchar_in) > 0) && ((unsigned int)wchar_in == lang_mask->at((unsigned int)wchar_in)))
+			else
 			{
-				current_gramm.pop_front();
-				current_gramm.push_back(wchar_in);
+				current_gramm_nooverlap.push_back(wchar_in);
+				l++;
 			}
 		}
 	} while (wchar_in != WEOF);
 	fclose(plain_file);
+	text_analysis_params[2] = total_chars_overlap;
+	text_analysis_params[3] = total_chars_nooverlap;
+	text_analysis_params[4] = blanks_count;
+
+	//                                                                                 outputing text info for overlap
+	FILE* gramm_output_overlap = fopen(output_file_name_overlap, "w");
+	fprintf(gramm_output_overlap, "%d %d %d %d\n", text_analysis_params[0], text_analysis_params[1], total_chars_overlap, blanks_count);
+	fclose(gramm_output_overlap);
+	//                                                                                 outputing text info for nooverlap
+	FILE* gramm_output_nooverlap = fopen(output_file_name_nooverlap, "w");
+	fprintf(gramm_output_nooverlap, "%d %d %d %d\n", text_analysis_params[0], text_analysis_params[1], total_chars_nooverlap, blanks_count);
+	fclose(gramm_output_nooverlap);
 
 	unsigned long int  current_ngramm_count = 0;
 	float current_ngramm_rate = 0.0f;
-	FILE* gramm_output_new = fopen(output_file_name, "a");
-	map<wstring, float> map_for_sort;
-	for (map<wstring, unsigned long int>::iterator i = hash_table.begin(); i != hash_table.end(); i++)
+	//                                                                                     rate for overlapped
+	FILE* gramm_output_new_overlap = fopen(output_file_name_overlap, "a");
+	map<wstring, float> map_for_sort_overlap;
+	for (map<wstring, unsigned long int>::iterator i = hash_table_overlap.begin(); i != hash_table_overlap.end(); i++)
 	{
 		current_ngramm_count = i->second;
-		current_ngramm_rate = (float)(current_ngramm_count) / (float)(text_analysis_params[2] - text_analysis_params[1] + 1);
-		map_for_sort[i->first] = current_ngramm_rate;
-		fwprintf(gramm_output_new, L"%s %d %0.9f\n", i->first.c_str(), current_ngramm_count, current_ngramm_rate);
+		current_ngramm_rate = (float)(current_ngramm_count) / (float)(total_chars_overlap);
+		map_for_sort_overlap[i->first] = current_ngramm_rate;
+		ensemble_overlap->insert(pair<wstring, float>(i->first, current_ngramm_rate));
+		fwprintf(gramm_output_new_overlap, L"%s %d %0.9f\n", i->first.c_str(), current_ngramm_count, current_ngramm_rate);
 	}
-	fclose(gramm_output_new);
-
-	char* f_name;
-	if (text_analysis_params[3] > 0)
+	fclose(gramm_output_new_overlap);
+	//                                                                                       rate for nooverlapped
+	FILE* gramm_output_new_nooverlap = fopen(output_file_name_nooverlap, "a");
+	map<wstring, float> map_for_sort_nooverlap;
+	for (map<wstring, unsigned long int>::iterator i = hash_table_nooverlap.begin(); i != hash_table_nooverlap.end(); i++)
 	{
-		f_name = filename_copy("_-gramm_rate_data_SORTED_ANDblanks.txt",NULL,0);
+		current_ngramm_count = i->second;
+		current_ngramm_rate = (float)(current_ngramm_count) / (float)(total_chars_nooverlap);
+		map_for_sort_nooverlap[i->first] = current_ngramm_rate;
+		ensemble_nooverlap->insert(pair<wstring, float>(i->first, current_ngramm_rate));
+		fwprintf(gramm_output_new_nooverlap, L"%s %d %0.9f\n", i->first.c_str(), current_ngramm_count, current_ngramm_rate);
+	}
+	fclose(gramm_output_new_nooverlap);
+
+	char* f_name_overlap;
+	char* f_name_nooverlap;
+	if (ignoreBlanks)
+	{
+		f_name_overlap = filename_copy("_-gramm_rate_data_SORTED_NOblanks_overlap.txt",NULL,0);
+		f_name_nooverlap = filename_copy("_-gramm_rate_data_SORTED_NOblanks_nooverlap.txt", NULL, 0);
 	}
 	else
 	{
-		f_name = filename_copy("_-gramm_rate_data_SORTED_NOblanks.txt",NULL,0);
+		f_name_overlap = filename_copy("_-gramm_rate_data_SORTED_ANDblanks_overlap.txt",NULL,0);
+		f_name_nooverlap = filename_copy("_-gramm_rate_data_SORTED_ANDblanks_nooverlap.txt", NULL, 0);
 	}
-	f_name[0] = (char)(text_analysis_params[1] + (int)'1' - 1);
-	output_ngramm_rate_sorted(text_analysis_params[0], text_analysis_params[1], &map_for_sort, f_name);
+	f_name_overlap[0] = (char)(text_analysis_params[1] + (int)'1' - 1);
+	f_name_nooverlap[0] = (char)(text_analysis_params[1] + (int)'1' - 1);
+	output_ngramm_rate_sorted(text_analysis_params[0], text_analysis_params[1], ignoreBlanks, &map_for_sort_overlap, f_name_overlap);
+	output_ngramm_rate_sorted(text_analysis_params[0], text_analysis_params[1], ignoreBlanks, &map_for_sort_nooverlap, f_name_nooverlap);
 	return 0;
 }
 
@@ -279,7 +354,7 @@ void quickSort(vector<map<wstring, float>::iterator>& iterators_array, unsigned 
 	}
 }
 
-int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<wstring, float>* hash_table, char* output_f_name)
+int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, bool ignoreBlanks, map<wstring, float>* hash_table, char* output_f_name)
 {
 	if (lang >= 2)
 	{
@@ -289,15 +364,15 @@ int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<w
 	{
 		return 1;
 	}
-	else if (n == 1)
+	else if ((n == 1))
 	{
 		vector<map<wstring, float>::iterator> sorted_arr;
 		sort_map_by_rate(hash_table, sorted_arr);
 		FILE* output_file = fopen(output_f_name, "w");
 		for (unsigned long int i = 0; i < sorted_arr.size(); i++)
 		{
-			if (sorted_arr[i]->first.c_str()[0] == ' ') fwprintf(output_file, L"'%s' %0.9f\n", sorted_arr[i]->first.c_str(), sorted_arr[i]->second);
-			else fwprintf(output_file, L"%s %0.9f\n", sorted_arr[i]->first.c_str(), sorted_arr[i]->second);
+			//if (sorted_arr[i]->first.c_str()[0] == ' ') fwprintf(output_file, L"'%s' %0.9f\n", sorted_arr[i]->first.c_str(), sorted_arr[i]->second);
+			fwprintf(output_file, L"%s %0.3f\n", sorted_arr[i]->first.c_str(), sorted_arr[i]->second);
 		}
 		fclose(output_file);
 	}
@@ -305,75 +380,88 @@ int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<w
 	{
 		const map<unsigned int, wchar_t>* lang_encoding;
 		const map<unsigned int, unsigned int>* lang_mask;
+		unsigned int index_first, index_last;
 		if (lang == 0)
 		{
 			lang_encoding = &eng_lang_encoding;
 			lang_mask = &eng_lang_mask;
+			index_first = index_eng_first;
+			index_last = index_eng_last;
 		}
 		else
 		{
 			lang_encoding = &rus_lang_encoding;
 			lang_mask = &rus_lang_mask;
+			index_first = index_rus_first;
+			index_last = index_rus_last;
 		}
 		FILE* output_file = fopen(output_f_name, "w");
 		fwprintf(output_file, L"     ");
-		for (unsigned int i = index_rus_first; i <= index_rus_last; i++)
+		for (unsigned int i = index_first; i <= index_last; i++)
 		{
 			if (i != lang_mask->at(i)) continue;
-			fwprintf(output_file, L"|      %c       ", lang_encoding->at(i));
+			fwprintf(output_file, L"|   %c    ", lang_encoding->at(i));
 		}
-		fwprintf(output_file, L"|      '%c'      |\n", lang_encoding->at(index_blank));
+		if (!ignoreBlanks) fwprintf(output_file, L"|   '%c'   |\n", lang_encoding->at(index_blank));
+		else fwprintf(output_file, L"|\n");
 		//                                                                                         columns
-		for (unsigned int i = index_rus_first; i <= index_rus_last; i++)
+		for (unsigned int i = index_first; i <= index_last; i++)
 		{
 			if (i != lang_mask->at(i)) continue;
 			fwprintf(output_file, L"----");
-			for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
+			for (unsigned int j = index_first; j <= index_last; j++)
 			{
 				if (j != lang_mask->at(j)) continue;
-				fwprintf(output_file, L"--------------");
+				fwprintf(output_file, L"-----------");
 			}
-			fwprintf(output_file, L"-------------\n");
+			fwprintf(output_file, L"----------\n");
 			
 			fwprintf(output_file, L"%c   ", lang_encoding->at(i));
-			for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
+			for (unsigned int j = index_first; j <= index_last; j++)
 			{
 				if (j != lang_mask->at(j)) continue;
 				wstring gramm = L"";
 				gramm += { lang_encoding->at(i) };
 				gramm += { lang_encoding->at(j) };
-				fwprintf(output_file, L" | %0.9f ", hash_table->at(gramm));
+				fwprintf(output_file, L" | %0.3f ", hash_table->at(gramm));
 			}
-			wstring gramm = L"";
-			gramm += { lang_encoding->at(i) };
-			gramm += { lang_encoding->at(index_blank) };
-			fwprintf(output_file, L"| %0.9f |\n", hash_table->at(gramm));
+			if (!ignoreBlanks)
+			{
+				wstring gramm = L"";
+				gramm += { lang_encoding->at(i) };
+				gramm += { lang_encoding->at(index_blank) };
+				fwprintf(output_file, L"| %0.3f |\n", hash_table->at(gramm));
+			}
+			else fwprintf(output_file, L"|\n");
 		}
 		//                                                                                 low-border + floats
-		for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
+		for (unsigned int j = index_first; j <= index_last; j++)
 		{
 			if (j != lang_mask->at(j)) continue;
-			fwprintf(output_file, L"---------------");
+			fwprintf(output_file, L"------------");
 		}
-		fwprintf(output_file, L"-------------\n");
-		fwprintf(output_file, L"' '");
-		for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
+		fwprintf(output_file, L"----------\n");
+		if (!ignoreBlanks)
 		{
-			if (j != lang_mask->at(j)) continue;
-			wstring gramm = L"";
-			gramm += { lang_encoding->at(index_blank) };
-			gramm += { lang_encoding->at(j) };
-			fwprintf(output_file, L" | %0.9f ", hash_table->at(gramm));
+			fwprintf(output_file, L"' '");
+			for (unsigned int j = index_first; j <= index_last; j++)
+			{
+				if (j != lang_mask->at(j)) continue;
+				wstring gramm = L"";
+				gramm += { lang_encoding->at(index_blank) };
+				gramm += { lang_encoding->at(j) };
+				fwprintf(output_file, L" | %0.3f ", hash_table->at(gramm));
+			}
+			fwprintf(output_file, L"| %0.3f |\n", hash_table->at(L"  "));
 		}
-		fwprintf(output_file, L"| %0.9f |\n", hash_table->at(L"  "));
 		//                                                                                 low-border + row with blanks
 		fwprintf(output_file, L"----");
-		for (unsigned int j = index_rus_first; j <= index_rus_last; j++)
+		for (unsigned int j = index_first; j <= index_last; j++)
 		{
 			if (j != lang_mask->at(j)) continue;
-			fwprintf(output_file, L"---------------");
+			fwprintf(output_file, L"------------");
 		}
-		fwprintf(output_file, L"-------------");
+		fwprintf(output_file, L"----------");
 		//                                                                                  final low-border
 		fclose(output_file);
 	}

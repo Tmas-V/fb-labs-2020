@@ -278,10 +278,8 @@ const map<unsigned int, unsigned int> eng_lang_mask = {
 
 char* filename_copy(const char* fname, const char** dir_array, unsigned int dir_len);
 int filter_text(char* f_raw_name, char* f_plain_name, int lang,bool ignoreBlanks);
-int get_text_length(char* f_plain_txt_name, unsigned long int& total_count, unsigned long int& blanks_count);
-int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name, unsigned long int text_analysis_params[4]);
+int generate_gramm_rate_file_MAP(char* plain_file_name, char* output_file_name_overlap, char* output_file_name_nooverlap, bool ignoreBlanks, unsigned long int text_analysis_params[5], map<wstring, float>* ensemble_overlap, map<wstring, float>* ensemble_nooverlap);
 
 int sort_map_by_rate(map<wstring, float>* hash_table, vector<map<wstring, float>::iterator>& sorted_arr);
 void quickSort(vector<map<wstring, float>::iterator>& iterators_array, unsigned long int left, unsigned long int right);
-int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, map<wstring, float>* hash_table, char* output_f_name);
-
+int output_ngramm_rate_sorted(unsigned long int lang, unsigned long int n, bool ignoreBlanks, map<wstring, float>* hash_table, char* output_f_name);

@@ -1,14 +1,1 @@
-# Ignore everything
-*
-# Don't ignore directories, so we can recurse into them
-!*/
-# Don't ignore .gitignore, *.txt, *.h and *.cpp files
-!.gitignore
-!*.txt
-!*.h
-!*.cpp
-!*.pdf
-!*.png
-!.\tasks\crypto_cp_1\TEXT
-!.\tasks\crypto_cp_1\TEXT_backup
-!.\tasks\crypto_cp_1\CoolPinkProgram.exe
+**/.DS_Store

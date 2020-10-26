@@ -9,17 +9,7 @@ lens_indexes=codecs.open( "indexes.txt", "r", "utf-8" ).read().split('\n')[:-1]
 cur_INDEX=calculate_INDEX(cipher_text)
 print("Calculated ciphertext INDEX = {}".format(cur_INDEX))
 print(cipher_text[:60])
-r=int(lens_indexes[0].split('\t')[0])
-temp_delta=abs(float(lens_indexes[0].split('\t')[1])-cur_INDEX)
-suggested_r=[]
-for i in lens_indexes:
-       new_delta=abs(float(i.split('\t')[1])-cur_INDEX)
-       if abs(new_delta) <= 0.002:
-              r = int(i.split('\t')[0])
-              temp_delta = new_delta
-              suggested_r.append(r)
-
-for r in range(20, 60): 
+for r in range(2, 60): 
        divided_text=divide_text(cipher_text, r)
        key=''
        for txt in divided_text:
@@ -29,7 +19,7 @@ for r in range(20, 60):
        dt=v_decode(cipher_text, key)
        i=calculate_INDEX(dt)
        if i >=0.04:
-              print("Suggested key lenght(r) = {}".format(r))
+              print("Suggested key length(r) = {}".format(r))
               print("Suggested key: {}".format(key))
               print(dt[:80])
               print("INDEX = {}".format(i))
@@ -37,4 +27,21 @@ for r in range(20, 60):
 
 print('\n')
 key='ВОЗВРАЩЕНИЕДЖИННА'
-print(v_decode(cipher_text, key)[:60])
+vt=v_decode(cipher_text, key)
+for char in cipher_text[:120]:
+       print(char.upper(), end="")
+print('')
+for i in range(0,120):
+       print(key[i%len(key)],end="")
+print('') 
+print(vt[:120])
+print('')
+i=14
+print("Frequencies for subtext number {}:".format(i))
+divided_text=divide_text(vt, 17)[i]
+cur_counts=get_counts_in_text(divided_text)
+cur_freq_rating = sorted(cur_counts.items(), key=lambda item: item[1])[::-1]
+print(cur_freq_rating)
+
+codecs.open( ".\\deciphered_text_var6.txt", "w", "utf-8" ).write(vt)
+

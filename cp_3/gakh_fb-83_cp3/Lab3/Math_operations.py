@@ -85,7 +85,7 @@ class XY_LINEAR_EQUATION:
               #LQ.print()
               a=LQ.solve()
               if a is None:
-                     print("lin eq returned None!!!!")
+                     #print("lin eq returned None!!!!")
                      return None
               b=[]
               for i in a:

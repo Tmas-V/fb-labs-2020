@@ -14,15 +14,17 @@ def deduce_key(X1_str,Y1_str,X2_str,Y2_str):
        
        
 
-cipher_text = filter_raw_text(".\\V11").upper()
+cipher_text = filter_raw_text(".\\06.txt").upper()
 cur_counts=get_counts_of_bigramms(cipher_text)
 
 cur_counts = sorted(cur_counts.items(), key=lambda item: item[1])[::-1]
 #print(cur_counts)
-print(freq_rating)
+#print(freq_rating)
 print('')
-for i in range(0,5):
-       for j in range(i+1,5):
+for i in range(0,20):
+       for j in range(i+1,20):
+              if i==j:
+                     continue
               all_keys=deduce_key(freq_rating[i], cur_counts[i][0], freq_rating[j], cur_counts[j][0])
               if all_keys is not None:
                      #print(all_keys)
@@ -41,11 +43,4 @@ for i in range(0,5):
                                    #print("deciphered text is None!!!!")
               print('--------------------------------------------------------------------------------\n')
                                    
-
-
-
-
-#with codecs.open('.\\my_text\\plain_text.txt', "w","utf-8") as file:
-#       file.write(filter_raw_text('.\\my_text\\raw_plaintext.txt'))
-#file.close()
 

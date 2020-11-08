@@ -1,7 +1,3 @@
-#обчисленням оберненого елементу за модулем із використанням розширеного алгоритму
-#Евкліда, розв’язуванням лінійних порівнянь. При розв’язуванні порівнянь потрібно
-#коректно обробляти випадок із декількома розв’язками, повертаючи їх усі
-
 def GCD_recursive(a,b):
            if (a*a+b*b==0):
                   return None
@@ -29,26 +25,22 @@ def reverse_mod(a,m):
               return 1
        x=[m//a]
        r=[m, a, m%a]
-       if r[0]!=1:
-              while r[len(r)-1]!=1:
-                     x.append(r[len(r)-2]//r[len(r)-1])
-                     r.append(r[len(r)-2]%r[len(r)-1])
+       while r[len(r)-1]!=1:
+              x.append(r[len(r)-2]//r[len(r)-1])
+              r.append(r[len(r)-2]%r[len(r)-1])
        #print("x: {}".format(x))
        #print("r: {}".format(r))
        i=len(x)-1
-       counter=True
+       #j=len(r)-2
        b=1
        c=-x[len(x)-1]
        while i>0:
+              #print("{} * {} + {} * {} = 1".format(r[j-1], b, r[j], c))
+              #j-=1
               i-=1
               b_copy=b
               b=c
-              if counter:
-                     c=b_copy-c*x[i]
-                     counter=False
-              else:
-                     c=-b_copy+c*x[i]
-                     counter=True
+              c=b_copy-c*x[i]
        #print("{} * {} + {} * {} = 1".format(r[0], b, r[1], c))
        return c
 
@@ -78,6 +70,30 @@ class LINEAR_EQUATION:
                             return x
               else:
                      return [reverse_mod(this.a,this.n)*this.b%this.n]
+class XY_LINEAR_EQUATION:
+       def __init__(this, X1, Y1, X2,Y2,n):
+              this.X1 = X1
+              this.Y1 = Y1
+              this.X2 = X2
+              this.Y2 = Y2
+              this.n = n
+       def print(this):
+              print("XY Equation: {} = {} * a + b mod ( {} )".format(this.Y1%this.n, this.X1%this.n, this.n))
+              print("                        {} = {} * a + b mod ( {} )".format(this.Y2%this.n, this.X2  %this.n, this.n))
+       def solve(this):
+              LQ = LINEAR_EQUATION((this.X1-this.X2)%this.n, (this.Y1-this.Y2)%this.n, this.n)
+              #LQ.print()
+              a=LQ.solve()
+              if a is None:
+                     print("lin eq returned None!!!!")
+                     return None
+              b=[]
+              for i in a:
+                     b.append((this.Y1-i*this.X1)%this.n)
+              result = []
+              for i in range(0,len(a)):
+                     result.append((a[i],b[i]))
+              return result
 
                      
        

@@ -1,47 +1,51 @@
-from Caesar_cipher_op import *
-from Vigenere_cipher_op import *
-
-cipher_text = codecs.open( ".\\var6_text\\ciphertext_var6.txt", "r", "utf-8" ).read()
+from Affine_cipher import *
 
 
-lens_indexes=codecs.open( "indexes.txt", "r", "utf-8" ).read().split('\n')[:-1]
-
-cur_INDEX=calculate_INDEX(cipher_text)
-print("Calculated ciphertext INDEX = {}".format(cur_INDEX))
-print(cipher_text[:60])
-for r in range(2, 60): 
-       divided_text=divide_text(cipher_text, r)
-       key=''
-       for txt in divided_text:
-              num=c_deduce_key(txt)
-              key+=char(num%alphabet_len)
+def deduce_key(X1_str,Y1_str,X2_str,Y2_str):
+       #print("{} -> {}, {} -> {}".format(X1_str,Y1_str,X2_str,Y2_str))
+       X1=encode_bigramm(X1_str)
+       Y1=encode_bigramm(Y1_str)
+       X2=encode_bigramm(X2_str)
+       Y2=encode_bigramm(Y2_str)
        
-       dt=v_decode(cipher_text, key)
-       i=calculate_INDEX(dt)
-       if i >=0.04:
-              print("Suggested key length(r) = {}".format(r))
-              print("Suggested key: {}".format(key))
-              print(dt[:80])
-              print("INDEX = {}".format(i))
-              print('-------------------------------------------------')
+       XY_LQ=XY_LINEAR_EQUATION(X1,Y1,X2,Y2, m)
+       #XY_LQ.print()
+       return XY_LQ.solve()
+       
+       
 
-print('\n')
-key='ВОЗВРАЩЕНИЕДЖИННА'
-vt=v_decode(cipher_text, key)
-for char in cipher_text[:120]:
-       print(char.upper(), end="")
-print('')
-for i in range(0,120):
-       print(key[i%len(key)],end="")
-print('') 
-print(vt[:120])
-print('')
-i=14
-print("Frequencies for subtext number {}:".format(i))
-divided_text=divide_text(vt, 17)[i]
-cur_counts=get_counts_in_text(divided_text)
-cur_freq_rating = sorted(cur_counts.items(), key=lambda item: item[1])[::-1]
-print(cur_freq_rating)
+cipher_text = filter_raw_text(".\\V11").upper()
+cur_counts=get_counts_of_bigramms(cipher_text)
 
-codecs.open( ".\\deciphered_text_var6.txt", "w", "utf-8" ).write(vt)
+cur_counts = sorted(cur_counts.items(), key=lambda item: item[1])[::-1]
+#print(cur_counts)
+print(freq_rating)
+print('')
+for i in range(0,5):
+       for j in range(i+1,5):
+              all_keys=deduce_key(freq_rating[i], cur_counts[i][0], freq_rating[j], cur_counts[j][0])
+              if all_keys is not None:
+                     #print(all_keys)
+                     for key in all_keys:
+                            plain_text=decipher_affine(cipher_text, key[0], key[1])
+                            if plain_text is not None:
+                                   index=calculate_INDEX(plain_text)
+                                   if index > 0.04:
+                                          print("{}  :  {}".format(key, plain_text[:200]))
+                                   #print(key, end=" ")
+                                   #print(plain_text[:30], end="  ")
+                                   #c_counts=get_counts_of_bigramms(plain_text)
+                                   #c_counts=sorted(c_counts.items(), key=lambda item: item[1])[::-1][:5]
+                                   #print(c_counts)
+                            #else:
+                                   #print("deciphered text is None!!!!")
+              print('--------------------------------------------------------------------------------\n')
+                                   
+
+
+
+
+#with codecs.open('.\\my_text\\plain_text.txt', "w","utf-8") as file:
+#       file.write(filter_raw_text('.\\my_text\\raw_plaintext.txt'))
+#file.close()
 

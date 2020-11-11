@@ -15,6 +15,7 @@ def deduce_key(X1_str,Y1_str,X2_str,Y2_str):
        
 
 cipher_text = filter_raw_text(".\\06.txt").upper()
+print(cipher_text[:60])
 cur_counts=get_counts_of_bigramms(cipher_text)
 
 cur_counts = sorted(cur_counts.items(), key=lambda item: item[1])[::-1]
@@ -32,7 +33,7 @@ for i in range(0,20):
                             plain_text=decipher_affine(cipher_text, key[0], key[1])
                             if plain_text is not None:
                                    index=calculate_INDEX(plain_text)
-                                   if index > 0.04:
+                                   if index > 0.05:
                                           print("{}  :  {}".format(key, plain_text[:200]))
                                    #print(key, end=" ")
                                    #print(plain_text[:30], end="  ")
@@ -41,6 +42,6 @@ for i in range(0,20):
                                    #print(c_counts)
                             #else:
                                    #print("deciphered text is None!!!!")
-              print('--------------------------------------------------------------------------------\n')
-                                   
+              #print('--------------------------------------------------------------------------------\n')
+
 

@@ -1,18 +1,13 @@
-def fast_power(x,a,m):
-       if x[1]!='b' or a[1]!='b' or m[1]!='b':
-              print("-----------------------------\nError in fast_power(): operands not binary.\n-----------------------------")
-              return None
-       x_i=int(x[2:],2)
-       a_b=a[2:][::-1]
-       m_i=int(m[2:],2)
+def fast_power(x,a,m): # you get x**a % m using Gorner scheme
+       a_b=bin(a)[2:][::-1]
        x_ans=1
-       x_temp=x_i%m_i
+       x_temp=x%m
        for i in range(0,len(a_b)):
               if a_b[i] == '1':
-                     x_ans=x_ans*x_temp%m_i
-              x_temp=x_temp*x_temp%m_i
+                     x_ans=x_ans*x_temp%m
+              x_temp=x_temp*x_temp%m
        return x_ans
-def generate_row(B,m):
+def generate_row(B,m): # you get array(row) for division inspection at B-basis for m(divisor)
        r=B%m
        ans=[1]
        while r!=1:
@@ -21,7 +16,7 @@ def generate_row(B,m):
                      return ans
               r=r*B%m
        return ans
-def get_numerals(x,B):
+def get_numerals(x,B): # you get x at B-basis(as an array)
        if B==2:
               x_bin=bin(x)[2:][::-1]
               ans=[]
@@ -43,7 +38,7 @@ def get_numerals(x,B):
               return ans[:-1]
        else:
               return None
-def check_mod(r_row,a_row,m):
+def check_mod(r_row,a_row,m): # you check primeness of a(True=prime), but firstly need to generate row with generate_row() for B-basis for m(divisor), get B-basis for a(number to inspect) - probably with get_numerals()
        ans=0
        if r_row[-1]==0:
               for i in range(0,len(r_row)):
@@ -53,11 +48,4 @@ def check_mod(r_row,a_row,m):
               for i in range(0,len(a_row)):
                      ans+=a_row[i]*r_row[i%l]%m
        return not bool(ans%m)
-#x=123
-#a=456
-#m=789
-#print("{}".format(fast_power(bin(x),bin(a),bin(m))))
-r_10_11=generate_row(2,11)
-a=get_numerals(1441,2)
-print(a)
-print(check_mod(r_10_11, a,11))
+

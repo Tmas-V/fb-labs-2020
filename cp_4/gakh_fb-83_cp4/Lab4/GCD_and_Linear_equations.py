@@ -42,7 +42,7 @@ def reverse_mod(a,m):
               b=c
               c=b_copy-c*x[i]
        #print("{} * {} + {} * {} = 1".format(r[0], b, r[1], c))
-       return c
+       return c%m
 
 
 class LINEAR_EQUATION:

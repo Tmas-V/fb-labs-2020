@@ -1,11 +1,12 @@
 def fast_power(x,a,m): # you get x**a % m using Gorner scheme
        a_b=bin(a)[2:][::-1]
+       #print(bin(a))
        x_ans=1
-       x_temp=x%m
+       x_temp=x
        for i in range(0,len(a_b)):
               if a_b[i] == '1':
-                     x_ans=x_ans*x_temp%m
-              x_temp=x_temp*x_temp%m
+                     x_ans = (x_ans*x_temp)%m
+              x_temp = (x_temp**2)%m
        return x_ans
 def generate_row(B,m): # you get array(row) for division inspection at B-basis for m(divisor)
        r=B%m
